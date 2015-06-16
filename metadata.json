@@ -1,0 +1,14 @@
+{
+  "name": "bpriestman-imwops_bootstrap",
+  "version": "0.1.0",
+  "author": "bpriestman",
+  "summary": "Bootstrap a puppet development environment",
+  "license": "Apache-2.0",
+  "source": "http://github.immediate.co.uk/BenPriestman/puppet-imwops_bootstrap.git",
+  "project_page": "http://github.immediate.co.uk/BenPriestman/puppet-imwops_bootstrap.git",
+  "issues_url": "http://github.immediate.co.uk/BenPriestman/puppet-imwops_bootstrap.git",
+  "dependencies": [
+    {"name":"puppetlabs-stdlib","version_requirement":">= 1.0.0"}
+  ]
+}
+

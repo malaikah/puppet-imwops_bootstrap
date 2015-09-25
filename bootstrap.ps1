@@ -1,8 +1,38 @@
-$ruby_version         = "2.1.6"
-$imwops_data_drive    = "E:"
-$imwops_root_dir      = "${ENV:ProgramData}\Immediate"
-$imwops_tools_dir     = "tools"
-$imwops_workspace_dir = "dev"
+<#
+.SYNOPSIS
+    Script to bootstrap a windows puppet development environment
+.DESCRIPTION
+    This script configures some base directory structure, installs chocolatey package management software, ruby and puppet.
+    This allows us to call puppet to configure other aspects of the system.
+.PARAMETER imwops_root_dir
+    This script and the puppet module it call will install a number of tools and configure data directories.
+    This parameter defines where on the file system these will appear to be located.
+    Defaults to C:\ProgramData\Immediate
+.PARAMETER imwops_data_drive
+    It is often convenient to have the files created under $imwops_root_dir to be located somewhere other than the system disk.
+    Setting this parameter to a drive letter other than C: makes this happen.
+.PARAMETER ruby_version
+    The version of ruby to install.
+.EXAMPLE
+    iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
+.NOTES
+    Author: Ben Priestman
+    Created: 25th Septemeber 2015
+#>
+
+[CmdletBinding(SupportsShouldProcess=$true,confirmimpact = "High")]
+Param(
+    [String]
+    $imwops_root_dir      = "${ENV:ProgramData}\Immediate",
+    [ValidateSet($(GET-WMIOBJECT win32_logicaldisk | where {$_.DriveType -eq 3} | select -Property DeviceId -ExpandProperty DeviceId]))
+    [String]
+    $imwops_data_drive,
+    [String]
+    $ruby_version         = "2.1.6"
+)
+
+$imwops_tools_dir     = "imwops\tools"
+$imwops_workspace_dir = "imwops\dev"
 
 # If we're storing data somewhere other than the SystemDrive, create a symlink to point there.
 $drives               = GET-WMIOBJECT win32_logicaldisk | where {$_.DriveType -eq 3} | select -Property DeviceId

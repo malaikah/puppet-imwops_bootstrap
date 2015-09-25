@@ -1,8 +1,8 @@
 $ruby_version         = "2.1.6"
 $imwops_data_drive    = "E:"
 $imwops_root_dir      = "${ENV:ProgramData}\Immediate"
-$imwops_tools_dir     = "\tools"
-$imwops_workspace_dir = "\dev"
+$imwops_tools_dir     = "tools"
+$imwops_workspace_dir = "dev"
 
 # If we're storing data somewhere other than the SystemDrive, create a symlink to point there.
 $drives               = GET-WMIOBJECT win32_logicaldisk | where {$_.DriveType -eq 3} | select -Property DeviceId
@@ -16,11 +16,11 @@ if ($imwops_data_drive -in $drives) {
 
 # Set environment variables (once for the current environment, once for future ones)
 ## Common directories
-[Environment]::SetEnvironmentVariable("imwops_tools", "${imwops_root_dir}${imwops_tools_dir}")
+[Environment]::SetEnvironmentVariable("imwops_tools", "${imwops_root_dir}\${imwops_tools_dir}")
 [Environment]::SetEnvironmentVariable("imwops_tools", $ENV:imwops_tools, 'Machine')
 [Environment]::SetEnvironmentVariable("FACTER_imwops_tools", $ENV:imwops_tools)
 [Environment]::SetEnvironmentVariable("FACTER_imwops_tools", $ENV:imwops_tools, 'Machine')
-[Environment]::SetEnvironmentVariable("imwops_workspace", "${imwops_root_dir}${imwops_workspace_dir}")
+[Environment]::SetEnvironmentVariable("imwops_workspace", "${imwops_root_dir}\${imwops_workspace_dir}")
 [Environment]::SetEnvironmentVariable("imwops_workspace", $ENV:imwops_workspace, 'Machine')
 [Environment]::SetEnvironmentVariable("FACTER_imwops_workspace", $ENV:imwops_workspace)
 [Environment]::SetEnvironmentVariable("FACTER_imwops_workspace", $ENV:imwops_workspace, 'Machine')

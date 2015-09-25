@@ -14,7 +14,7 @@
 .PARAMETER ruby_version
     The version of ruby to install.
 .EXAMPLE
-    iex ((new-object net.webclient).DownloadString('https://github.immediate.co.uk/BenPriestman/puppet-imwops_bootstrap/blob/master/bootstrap.ps1'))
+    iex ((new-object net.webclient).DownloadString('https://raw.github.immediate.co.uk/BenPriestman/puppet-imwops_bootstrap/master/bootstrap.ps1'))
 .NOTES
     Author: Ben Priestman
     Created: 25th Septemeber 2015

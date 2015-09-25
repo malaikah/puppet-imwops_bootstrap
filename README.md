@@ -3,21 +3,26 @@
 #### Table of Contents
 
 1. [Overview](#overview)
-2. [Module Description - What the module does and why it is useful](#module-description)
-3. [Setup - The basics of getting started with imwops_bootstrap](#setup)
+2. [Bootsrap a new system](#bootstrap-a-new-system)
+3. [Module Description - What the module does and why it is useful](#module-description)
+4. [Setup - The basics of getting started with imwops_bootstrap](#setup)
     * [What imwops_bootstrap affects](#what-imwops_bootstrap-affects)
     * [Setup requirements](#setup-requirements)
     * [Beginning with imwops_bootstrap](#beginning-with-imwops_bootstrap)
-4. [Usage - Configuration options and additional functionality](#usage)
-5. [Reference - An under-the-hood peek at what the module is doing and how](#reference)
-5. [Limitations - OS compatibility, etc.](#limitations)
-6. [Development - Guide for contributing to the module](#development)
+5. [Usage - Configuration options and additional functionality](#usage)
+6. [Reference - An under-the-hood peek at what the module is doing and how](#reference)
+7. [Limitations - OS compatibility, etc.](#limitations)
+8. [Development - Guide for contributing to the module](#development)
 
 ## Overview
 
-A one-maybe-two sentence summary of what the module does/what problem it solves.
-This is your 30 second elevator pitch for your module. Consider including
-OS/Puppet version it works with.
+Bootstrap code for getting a puppet development up and running. Consists of a base configuration script to get fundamental requirements onto a system and puppet-managed additonal tools and configurations.
+
+## Bootstrap a new system
+
+### Windows
+
+Download a zip file of this repo from github, extract it and run .\bootsrap.ps1.
 
 ## Module Description
 

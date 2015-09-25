@@ -1,3 +1,25 @@
+<#
+.SYNOPSIS
+    Script to bootstrap a windows puppet development environment
+.DESCRIPTION
+    This script configures some base directory structure, installs chocolatey package management software, ruby and puppet.
+    This allows us to call puppet to configure other aspects of the system.
+.PARAMETER imwops_root_dir
+    This script and the puppet module it call will install a number of tools and configure data directories.
+    This parameter defines where on the file system these will appear to be located.
+    Defaults to C:\ProgramData\Immediate
+.PARAMETER imwops_data_drive
+    It is often convenient to have the files created under $imwops_root_dir to be located somewhere other than the system disk.
+    Setting this parameter to a drive letter other than C: makes this happen.
+.PARAMETER ruby_version
+    The version of ruby to install.
+.EXAMPLE
+    iex ((new-object net.webclient).DownloadString('https://github.immediate.co.uk/BenPriestman/puppet-imwops_bootstrap/blob/master/bootstrap.ps1'))
+.NOTES
+    Author: Ben Priestman
+    Created: 25th Septemeber 2015
+#>
+
 [CmdletBinding(SupportsShouldProcess=$true,confirmimpact = "High")]
 Param(
     [String]

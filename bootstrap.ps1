@@ -24,7 +24,6 @@
 Param(
     [String]
     $imwops_root_dir      = "${ENV:ProgramData}\Immediate",
-    [ValidateSet($(GET-WMIOBJECT win32_logicaldisk | where {$_.DriveType -eq 3} | select -Property DeviceId -ExpandProperty DeviceId]))
     [String]
     $imwops_data_drive,
     [String]
@@ -36,6 +35,9 @@ $imwops_workspace_dir = "imwops\dev"
 
 # If we're storing data somewhere other than the SystemDrive, create a symlink to point there.
 $drives               = GET-WMIOBJECT win32_logicaldisk | where {$_.DriveType -eq 3} | select -Property DeviceId
+if (!($imwops_data_drive)) {
+    $imwops_data_drive = Read-Host -Prompt "Enter a drive to use to install imwops tools onto. Available drives: $drives"
+}
 if ($imwops_data_drive -in $drives) {
     if ($imwops_data_drive -ne $env:SystemDrive) {
         & mklink /D $imwops_root_dir $imwops_data_drive

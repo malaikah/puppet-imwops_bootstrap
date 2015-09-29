@@ -27,18 +27,22 @@ Param(
     [String]
     $imwops_data_drive,
     [String]
-    $ruby_version         = "2.1.6"
+    $ruby_version         = "2.1.6",
+    [String]
+    $puppet_version       = "3.7.2"
 )
 
 $imwops_tools_dir     = "imwops\tools"
 $imwops_workspace_dir = "imwops\dev"
+$global_caccerts_file = "${imwops_root_dir}\${imwops_tools_dir}\cacerts.pem"
+$script_root          = Set-Location $(Split-Path $script:MyInvocation.MyCommand.Path)
 
 # If we're storing data somewhere other than the SystemDrive, create a symlink to point there.
-$drives               = GET-WMIOBJECT win32_logicaldisk | where {$_.DriveType -eq 3} | select -Property DeviceId
+$drives               = GET-WMIOBJECT win32_logicaldisk | where {$_.DriveType -eq 3} | select -Property DeviceId -ExpandProperty DeviceId
 if (!($imwops_data_drive)) {
     $imwops_data_drive = Read-Host -Prompt "Enter a drive to use to install imwops tools onto. Available drives: $drives"
 }
-if ($imwops_data_drive -in $drives) {
+if ($drives -contains $imwops_data_drive) {
     if ($imwops_data_drive -ne $env:SystemDrive) {
         & mklink /D $imwops_root_dir $imwops_data_drive
     }
@@ -57,13 +61,15 @@ if ($imwops_data_drive -in $drives) {
 [Environment]::SetEnvironmentVariable("FACTER_imwops_workspace", $ENV:imwops_workspace)
 [Environment]::SetEnvironmentVariable("FACTER_imwops_workspace", $ENV:imwops_workspace, 'Machine')
 ## Override HOME environemnt variable set from AD/GPOs
-[Environment]::SetEnvironmentVariable("HOME", '%USERPROFILE%')
-[Environment]::SetEnvironmentVariable("HOME", '%USERPROFILE%', 'User')
+[Environment]::SetEnvironmentVariable("HOME", $Env:USERPROFILE)
+[Environment]::SetEnvironmentVariable("HOME", $Env:USERPROFILE, 'User')
 ## pre-set some chocolatey variables
 [Environment]::SetEnvironmentVariable("ChocolateyInstall", "${ENV:ProgramData}\chocolatey")
 [Environment]::SetEnvironmentVariable("ChocolateyInstall", "${ENV:ProgramData}\chocolatey", 'Machine')
 [Environment]::SetEnvironmentVariable("ChocolateyBinRoot", $ENV:imwops_tools)
 [Environment]::SetEnvironmentVariable("ChocolateyBinRoot", $ENV:imwops_tools, 'Machine')
+## Define Puppet version
+[Environment]::SetEnvironmentVariable("PUPPET_VERSION", $puppet_version)
 
 # Install chocolatey
 iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
@@ -72,14 +78,18 @@ iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.p
 # Install ruby and bundler
 # Install https://bitbucket.org/jonforums/uru ?
 # specify ruby version?
-choco install ruby
+choco install -y ruby ruby2.devkit
 [Environment]::SetEnvironmentVariable("Path", $($([Environment]::GetEnvironmentVariable('Path','User')) + $([Environment]::GetEnvironmentVariable('Path','Machine'))))
-# SSL will be broken until we update gems
+# SSL is broken on Windows unless we specify trusted root certs.
+Copy-Object "${script_root}\files\ssl\trusted_root_cacerts.pem" $global_caccerts_file
+[Environment]::SetEnvironmentVariable("SSL_CERT_FILE", $global_caccerts_file)
+[Environment]::SetEnvironmentVariable("SSL_CERT_FILE", $global_caccerts_file, 'Machine')
+# update rubygems
 gem update --system
 gem install bundler
 
 # Now we should be able to bootstrap puppet into existence, pull down any required modules an get up and running
-Set-Location $(Split-Path $script:MyInvocation.MyCommand.Path)
+Set-Location $script_root
 bundle install
 librarian-puppet install
 $module_path=$(puppet config print modulepath 2>NUL) + ':' + $bootstrap_dir

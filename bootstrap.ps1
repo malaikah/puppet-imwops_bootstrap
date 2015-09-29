@@ -35,7 +35,7 @@ Param(
 $imwops_tools_dir     = "imwops\tools"
 $imwops_workspace_dir = "imwops\dev"
 $global_caccerts_file = "${imwops_root_dir}\${imwops_tools_dir}\cacerts.pem"
-$script_root          = Set-Location $(Split-Path $script:MyInvocation.MyCommand.Path)
+$script_root          = Split-Path $script:MyInvocation.MyCommand.Path
 
 # If we're storing data somewhere other than the SystemDrive, create a symlink to point there.
 $drives               = GET-WMIOBJECT win32_logicaldisk | where {$_.DriveType -eq 3} | select -Property DeviceId -ExpandProperty DeviceId
@@ -81,7 +81,7 @@ iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.p
 choco install -y ruby ruby2.devkit
 [Environment]::SetEnvironmentVariable("Path", $($([Environment]::GetEnvironmentVariable('Path','User')) + $([Environment]::GetEnvironmentVariable('Path','Machine'))))
 # SSL is broken on Windows unless we specify trusted root certs.
-Copy-Object "${script_root}\files\ssl\trusted_root_cacerts.pem" $global_caccerts_file
+Copy-Item "${script_root}\files\ssl\trusted_root_cacerts.pem" $global_caccerts_file
 [Environment]::SetEnvironmentVariable("SSL_CERT_FILE", $global_caccerts_file)
 [Environment]::SetEnvironmentVariable("SSL_CERT_FILE", $global_caccerts_file, 'Machine')
 # update rubygems

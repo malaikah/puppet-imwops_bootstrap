@@ -1,0 +1,15 @@
+FORGE
+  remote: https://forgeapi.puppetlabs.com
+  specs:
+    badgerious-windows_env (2.2.2)
+    chocolatey-chocolatey (1.1.2)
+      badgerious-windows_env (< 3.0.0, >= 2.2.1)
+      puppetlabs-powershell (< 2.0.0, >= 1.0.1)
+      puppetlabs-stdlib (< 5.0.0, >= 4.6.0)
+    puppetlabs-powershell (1.0.5)
+    puppetlabs-stdlib (4.9.0)
+
+DEPENDENCIES
+  chocolatey-chocolatey (< 2.0.0, >= 1.0.0)
+  puppetlabs-stdlib (< 5.0.0, >= 4.0.0)
+

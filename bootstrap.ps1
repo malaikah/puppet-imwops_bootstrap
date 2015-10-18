@@ -10,11 +10,11 @@
     Defaults to C:\ProgramData\Immediate
 .PARAMETER imwops_data_drive
     It is often convenient to have the files created under $imwops_root_dir to be located somewhere other than the system disk.
-    Setting this parameter to a drive letter other than C: makes this happen.
+    Setting this parameter to a drive letter other than C makes this happen.
 .PARAMETER ruby_version
     The version of ruby to install.
 .EXAMPLE
-    imwops_data_drive="C"; iex ((new-object net.webclient).DownloadString('https://raw.github.immediate.co.uk/BenPriestman/puppet-imwops_bootstrap/master/bootstrap.ps1'))
+    .\bootstrap.ps1 -imwops_data_drive C
 .NOTES
     Author: Ben Priestman
     Created: 25th Septemeber 2015
@@ -29,7 +29,7 @@ Param(
     [String]
     $ruby_version         = "2.1.6",
     [String]
-    $puppet_version       = "3.7.2"
+    $bundler_version      = "1.10.6"
 )
 
 $imwops_tools_dir     = "imwops\tools"
@@ -40,15 +40,15 @@ $script_root          = Split-Path $script:MyInvocation.MyCommand.Path
 # If we're storing data somewhere other than the SystemDrive, create a symlink to point there.
 $drives               = GET-WMIOBJECT win32_logicaldisk | where {$_.DriveType -eq 3} | select -Property DeviceId -ExpandProperty DeviceId
 if (!($imwops_data_drive)) {
-    if (!($ENV:imwops_data_drive)) {
+    if ($ENV:imwops_data_drive) {
         $imwops_data_drive  = $ENV:imwops_data_drive
     } else {
         $imwops_data_drive = Read-Host -Prompt "Enter a drive to use to install imwops tools onto. Available drives: $drives"
     }
 }
-if ($drives -contains $imwops_data_drive) {
-    if ($imwops_data_drive -ne $env:SystemDrive) {
-        & mklink /D $imwops_root_dir $imwops_data_drive
+if ($drives -contains "${imwops_data_drive}:") {
+    if (($imwops_data_drive -ne $env:SystemDrive) -and !(Test-Path $imwops_root_dir)) {
+        & cmd /c "mklink /D $imwops_root_dir $imwops_data_drive"
     }
 } else {
     throw ("$imwops_data_drive is not a valid drive.")
@@ -56,6 +56,8 @@ if ($drives -contains $imwops_data_drive) {
 
 # Set environment variables (once for the current environment, once for future ones)
 ## Common directories
+[Environment]::SetEnvironmentVariable("imwops_data_drive", $imwops_data_drive)
+[Environment]::SetEnvironmentVariable("imwops_data_drive", $ENV:imwops_data_drive, 'Machine')
 [Environment]::SetEnvironmentVariable("imwops_tools", "${imwops_root_dir}\${imwops_tools_dir}")
 [Environment]::SetEnvironmentVariable("imwops_tools", $ENV:imwops_tools, 'Machine')
 [Environment]::SetEnvironmentVariable("FACTER_imwops_tools", $ENV:imwops_tools)
@@ -76,13 +78,18 @@ if ($drives -contains $imwops_data_drive) {
 [Environment]::SetEnvironmentVariable("PUPPET_VERSION", $puppet_version)
 
 # Install chocolatey
-iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
-[Environment]::SetEnvironmentVariable("Path", $($([Environment]::GetEnvironmentVariable('Path','User')) + $([Environment]::GetEnvironmentVariable('Path','Machine'))))
+try {
+    if (Get-Command choco) {}
+} catch {
+    # If get-command choco returns an error, we need to install cohocolatey
+    iex ((new-object net.webclient).DownloadString('https://chocolatey.org/install.ps1'))
+    [Environment]::SetEnvironmentVariable("Path", $($([Environment]::GetEnvironmentVariable('Path','User')) + $([Environment]::GetEnvironmentVariable('Path','Machine'))))
+}
 
 # Install ruby and bundler
 # Install https://bitbucket.org/jonforums/uru ?
 # specify ruby version?
-choco install -y ruby ruby2.devkit
+choco install -y ruby
 [Environment]::SetEnvironmentVariable("Path", $($([Environment]::GetEnvironmentVariable('Path','User')) + $([Environment]::GetEnvironmentVariable('Path','Machine'))))
 # SSL is broken on Windows unless we specify trusted root certs.
 Copy-Item "${script_root}\files\ssl\trusted_root_cacerts.pem" $global_caccerts_file
@@ -90,11 +97,13 @@ Copy-Item "${script_root}\files\ssl\trusted_root_cacerts.pem" $global_caccerts_f
 [Environment]::SetEnvironmentVariable("SSL_CERT_FILE", $global_caccerts_file, 'Machine')
 # update rubygems
 gem update --system
-gem install bundler
+gem install bundler -v $bundler_version
 
 # Now we should be able to bootstrap puppet into existence, pull down any required modules an get up and running
 Set-Location $script_root
 bundle install
+$module_paths = @($(puppet config print modulepath 2>$NULL))
+$module_paths += "../"
+$module_path = $module_paths -join(':')
 librarian-puppet install
-$module_path=$(puppet config print modulepath 2>NUL) + ':' + $bootstrap_dir
-puppet apply -e 'include imwops_bootstrap'
+puppet apply --modulepath $module_path manifests/init.pp

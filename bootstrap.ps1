@@ -14,7 +14,7 @@
 .PARAMETER ruby_version
     The version of ruby to install.
 .EXAMPLE
-    iex ((new-object net.webclient).DownloadString('https://raw.github.immediate.co.uk/BenPriestman/puppet-imwops_bootstrap/master/bootstrap.ps1'))
+    imwops_data_drive="C"; iex ((new-object net.webclient).DownloadString('https://raw.github.immediate.co.uk/BenPriestman/puppet-imwops_bootstrap/master/bootstrap.ps1'))
 .NOTES
     Author: Ben Priestman
     Created: 25th Septemeber 2015
@@ -40,7 +40,11 @@ $script_root          = Split-Path $script:MyInvocation.MyCommand.Path
 # If we're storing data somewhere other than the SystemDrive, create a symlink to point there.
 $drives               = GET-WMIOBJECT win32_logicaldisk | where {$_.DriveType -eq 3} | select -Property DeviceId -ExpandProperty DeviceId
 if (!($imwops_data_drive)) {
-    $imwops_data_drive = Read-Host -Prompt "Enter a drive to use to install imwops tools onto. Available drives: $drives"
+    if (!($ENV:imwops_data_drive)) {
+        $imwops_data_drive  = $ENV:imwops_data_drive
+    } else {
+        $imwops_data_drive = Read-Host -Prompt "Enter a drive to use to install imwops tools onto. Available drives: $drives"
+    }
 }
 if ($drives -contains $imwops_data_drive) {
     if ($imwops_data_drive -ne $env:SystemDrive) {

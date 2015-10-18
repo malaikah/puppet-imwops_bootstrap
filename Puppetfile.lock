@@ -10,6 +10,6 @@ FORGE
     puppetlabs-stdlib (4.9.0)
 
 DEPENDENCIES
-  chocolatey-chocolatey (< 2.0.0, >= 1.0.0)
-  puppetlabs-stdlib (< 5.0.0, >= 4.0.0)
+  chocolatey-chocolatey (>= 0)
+  puppetlabs-stdlib (>= 0)
 

@@ -92,7 +92,7 @@ try {
 choco install -y ruby
 [Environment]::SetEnvironmentVariable("Path", $($([Environment]::GetEnvironmentVariable('Path','User')) + $([Environment]::GetEnvironmentVariable('Path','Machine'))))
 # SSL is broken on Windows unless we specify trusted root certs.
-Copy-Item "${script_root}\files\ssl\trusted_root_cacerts.pem" $global_caccerts_file
+Copy-Item "${script_root}\dist\imwops_bootstrap\files\ssl\trusted_root_cacerts.pem" $global_caccerts_file
 [Environment]::SetEnvironmentVariable("SSL_CERT_FILE", $global_caccerts_file)
 [Environment]::SetEnvironmentVariable("SSL_CERT_FILE", $global_caccerts_file, 'Machine')
 # update rubygems
@@ -102,8 +102,6 @@ gem install bundler -v $bundler_version
 # Now we should be able to bootstrap puppet into existence, pull down any required modules an get up and running
 Set-Location $script_root
 bundle install
-$module_paths = @($(puppet config print modulepath 2>$NULL))
-$module_paths += "../"
-$module_path = $module_paths -join(':')
-librarian-puppet install
-puppet apply --modulepath $module_path manifests/init.pp
+$module_path = "modules:dist"
+r10k puppetfile install
+puppet apply --modulepath $module_path dist\imwops_bootstrap\manifests\init.pp

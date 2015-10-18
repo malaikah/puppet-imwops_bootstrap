@@ -1,2 +1,4 @@
 .tmp/
+.librarian/
+.r10k/
 modules/

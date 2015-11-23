@@ -1,81 +1,90 @@
-<#
-.SYNOPSIS
-    Script to bootstrap a windows puppet development environment
-.DESCRIPTION
-    This script configures some base directory structure, installs chocolatey package management software, ruby and puppet.
-    This allows us to call puppet to configure other aspects of the system.
-.PARAMETER imwops_root_dir
-    This script and the puppet module it call will install a number of tools and configure data directories.
-    This parameter defines where on the file system these will appear to be located.
-    Defaults to C:\ProgramData\Immediate
-.PARAMETER imwops_data_drive
-    It is often convenient to have the files created under $imwops_root_dir to be located somewhere other than the system disk.
-    Setting this parameter to a drive letter other than C makes this happen.
-.PARAMETER ruby_version
-    The version of ruby to install.
-.EXAMPLE
-    .\bootstrap.ps1 -imwops_data_drive C
-.NOTES
-    Author: Ben Priestman
-    Created: 25th Septemeber 2015
-#>
-
-[CmdletBinding(SupportsShouldProcess=$true,confirmimpact = "High")]
-Param(
-    [String]
-    $imwops_root_dir      = "${ENV:ProgramData}\Immediate",
-    [String]
-    $imwops_data_drive,
-    [String]
-    $ruby_version         = "2.1.6",
-    [String]
-    $bundler_version      = "1.10.6"
-)
-
-$imwops_tools_dir     = "imwops\tools"
-$imwops_workspace_dir = "imwops\dev"
+####################################
+# ToDo: Stop farting around with elevated permissions
+# just set permissions on directories.
+############################################
+$im_root_dir          = "${ENV:ProgramData}\Immediate"
+$imwops_root_dir      = "${im_root_dir}\imwops"
+$imwops_tools_dir     = "tools"
+$imwops_workspace_dir = "dev"
 $global_caccerts_file = "${imwops_root_dir}\${imwops_tools_dir}\cacerts.pem"
-$script_root          = Split-Path $script:MyInvocation.MyCommand.Path
+#$script_root          = Split-Path $script:MyInvocation.MyCommand.Path
+
+# Set permissions
+function Set-NTFSDACLEntry {
+    Param (
+        [String]$Rights = "Read",
+        [Switch]$Allow = $true,
+        [String]$User,
+        [String]$Path
+    )
+    $colRights = [System.Security.AccessControl.FileSystemRights]$Rights
+    $inheritanceFlag = [System.Security.AccessControl.InheritanceFlags]"ContainerInherit, ObjectInherit"
+    $PropagationFlag = [System.Security.AccessControl.PropagationFlags]::None
+    If ($Allow) {
+        $objType = [System.Security.AccessControl.AccessControlType]::Allow
+    } else {
+        $objType = [System.Security.AccessControl.AccessControlType]::Deny
+    }
+    $objACE  = New-Object System.Security.AccessControl.FileSystemAccessRule `
+        ($User, $colRights, $InheritanceFlag, $PropagationFlag, $objType)
+    $objACL = Get-ACL $Path
+    $objACL.AddAccessRule($objACE)
+    Set-ACL $Path $objACL
+}
 
 # If we're storing data somewhere other than the SystemDrive, create a symlink to point there.
 $drives               = GET-WMIOBJECT win32_logicaldisk | where {$_.DriveType -eq 3} | select -Property DeviceId -ExpandProperty DeviceId
-if (!($imwops_data_drive)) {
-    if ($ENV:imwops_data_drive) {
-        $imwops_data_drive  = $ENV:imwops_data_drive
+if (!($im_data_drive)) {
+    if ($ENV:im_data_drive) {
+        $im_data_drive  = $ENV:imwops_data_drive
     } else {
-        $imwops_data_drive = Read-Host -Prompt "Enter a drive to use to install imwops tools onto. Available drives: $drives"
+        $im_data_drive = Read-Host -Prompt "Enter a drive to use to install imwops tools onto. Available drives: $drives"
     }
 }
-if ($drives -contains "${imwops_data_drive}:") {
-    if (($imwops_data_drive -ne $env:SystemDrive) -and !(Test-Path $imwops_root_dir)) {
-        & cmd /c "mklink /D $imwops_root_dir $imwops_data_drive"
+
+if ($drives -contains "${im_data_drive}:") {
+    if (($im_data_drive -ne $env:SystemDrive) -and !(Test-Path $im_root_dir)) {
+        & cmd /c "mklink /D $im_root_dir $im_data_drive"
+    } elseif (!(Test-Path $im_root_dir)) {
+        New-Item -Type Directory $im_root_dir
     }
 } else {
-    throw ("$imwops_data_drive is not a valid drive.")
+    throw ("$im_data_drive is not a valid drive.")
 }
 
 # Set environment variables (once for the current environment, once for future ones)
 ## Common directories
-[Environment]::SetEnvironmentVariable("imwops_data_drive", $imwops_data_drive)
-[Environment]::SetEnvironmentVariable("imwops_data_drive", $ENV:imwops_data_drive, 'Machine')
+[Environment]::SetEnvironmentVariable("im_root_dir", $im_root_dir)
+[Environment]::SetEnvironmentVariable("FACTER_im_root_dir", $im_root_dir)
 [Environment]::SetEnvironmentVariable("imwops_tools", "${imwops_root_dir}\${imwops_tools_dir}")
-[Environment]::SetEnvironmentVariable("imwops_tools", $ENV:imwops_tools, 'Machine')
 [Environment]::SetEnvironmentVariable("FACTER_imwops_tools", $ENV:imwops_tools)
-[Environment]::SetEnvironmentVariable("FACTER_imwops_tools", $ENV:imwops_tools, 'Machine')
 [Environment]::SetEnvironmentVariable("imwops_workspace", "${imwops_root_dir}\${imwops_workspace_dir}")
-[Environment]::SetEnvironmentVariable("imwops_workspace", $ENV:imwops_workspace, 'Machine')
 [Environment]::SetEnvironmentVariable("FACTER_imwops_workspace", $ENV:imwops_workspace)
-[Environment]::SetEnvironmentVariable("FACTER_imwops_workspace", $ENV:imwops_workspace, 'Machine')
+[Environment]::SetEnvironmentVariable("im_root_dir", $im_root_dir, "Machine")
+[Environment]::SetEnvironmentVariable("im_root_dir", $FACTER_im_root_dir, "Machine")
+[Environment]::SetEnvironmentVariable("imwops_tools", $ENV:imwops_tools, "Machine")
+[Environment]::SetEnvironmentVariable("FACTER_imwops_tools", $ENV:FACTER_imwops_tools, "Machine")
+[Environment]::SetEnvironmentVariable("imwops_workspace", $ENV:imwops_workspace, "Machine")
+[Environment]::SetEnvironmentVariable("FACTER_imwops_workspace", $ENV:FACTER_imwops_workspace, "Machine")
 ## Override HOME environemnt variable set from AD/GPOs
 [Environment]::SetEnvironmentVariable("HOME", $Env:USERPROFILE)
 [Environment]::SetEnvironmentVariable("HOME", $Env:USERPROFILE, 'User')
 ## pre-set some chocolatey variables
 [Environment]::SetEnvironmentVariable("ChocolateyInstall", "${ENV:ProgramData}\chocolatey")
-[Environment]::SetEnvironmentVariable("ChocolateyInstall", "${ENV:ProgramData}\chocolatey", 'Machine')
-[Environment]::SetEnvironmentVariable("ChocolateyBinRoot", $ENV:imwops_tools)
-[Environment]::SetEnvironmentVariable("ChocolateyBinRoot", $ENV:imwops_tools, 'Machine')
+[Environment]::SetEnvironmentVariable("ChocolateyBinRoot", '%imwops_tools%')
+[Environment]::SetEnvironmentVariable("ChocolateyInstall", $ENV:ChocolateyInstall, 'Machine')
+[Environment]::SetEnvironmentVariable("ChocolateyBinRoot", $ENV:ChocolateyBinRoot, 'Machine')
 ## Define Puppet version
 [Environment]::SetEnvironmentVariable("PUPPET_VERSION", $puppet_version)
+
+# create directories and allow .\Users to Modify
+$dirs = @($imwops_root_dir, $Env:imwops_workspace,$ENV:imwops_tools)
+ForEach ($dir in $dirs) {
+    if (!(Test-Path $dir)) {
+        New-Item -Type Directory -Path $dir
+    }
+    Set-NTFSDACLEntry -Path $dir -Rights Modify -User "BUILTIN\Users"
+}
 
 # Install chocolatey
 try {
@@ -99,9 +108,24 @@ Copy-Item "${script_root}\dist\imwops_bootstrap\files\ssl\trusted_root_cacerts.p
 gem update --system
 gem install bundler -v $bundler_version
 
+# ToDo: Set up putty and git to allow ssh auhtnetication to puppet git sources
+#SOmethinglike:
+#choco install putty
+#Install switches?
+#Do something to get putty onto path?
+#Do we already have a private key? 
+# If not, run puttygen and tell the user what to do with it
+#Where's our private key?
+#& pageant $ssh_private_key_path
+#Configure this command to start on login
+#choco install git -params '*/GitAndUnixToolsOnPath /NoAutoCrlf"
+#[Environment]::SetEnvironmentVariable("GIT_SSH", 'plink.exe')
+#[Environment]::SetEnvironmentVariable("GIT_SSH", 'plink.exe', 'Machine')
+
+
 # Now we should be able to bootstrap puppet into existence, pull down any required modules an get up and running
-Set-Location $script_root
-bundle install
-$module_path = "modules:dist"
-r10k puppetfile install
-puppet apply --modulepath $module_path dist\imwops_bootstrap\manifests\init.pp
+#Set-Location $script_root
+#bundle install
+#$module_path = "modules:dist"
+#r10k puppetfile install
+#puppet apply --modulepath $module_path dist\imwops_bootstrap\manifests\init.pp

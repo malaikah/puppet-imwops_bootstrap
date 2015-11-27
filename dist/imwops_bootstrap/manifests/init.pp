@@ -37,5 +37,10 @@
 #
 class imwops_bootstrap {
 
+    include imwops_bootstrap::geppetto
+    include imwops_bootstrap::vagrant
+    include imwops_bootstrap::virtualbox
+    
+    info('Hello')
 
 }

@@ -165,4 +165,4 @@ $module_path = "modules;dist"
 # Blooming librarian-puppet is still being awkward.
 #librarian-puppet install
 r10k puppetfile install
-puppet apply --modulepath $module_path dist\imwops_bootstrap\manifests\init.pp
+puppet apply --modulepath $module_path -e "include: imwops_bootstrap"

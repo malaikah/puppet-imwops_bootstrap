@@ -127,7 +127,7 @@ gem install bundler -v $bundler_version
 
 # Set up putty and git to allow ssh auhtnetication to puppet git sources
 choco install putty
-choco install git -params "/GitAndUnixToolsOnPath /NoAutoCrlf"
+choco install git -params '"/GitAndUnixToolsOnPath /NoAutoCrlf"'
 [Environment]::SetEnvironmentVariable("GIT_SSH", 'plink.exe')
 [Environment]::SetEnvironmentVariable("GIT_SSH", 'plink.exe', 'Machine')
 
